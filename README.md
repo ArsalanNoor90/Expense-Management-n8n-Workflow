@@ -16,19 +16,41 @@ An automated end-to-end expense processing engine built with n8n. It automatical
 
 ---
 
+---
+
 ## 🖼️ System Screenshots
 
-| Screen | Description | Visual Output |
-| :---: | :--- | :---: |
-| **01** | **Main n8n Workflow Architecture** | <img src="Screenshot 2026-09-14 212059.png" width="220" alt="Workflow Canvas"> |
-| **02** | **Receipt Data Ingestion & JSON Parsing** | <img src="Screenshot 2026-09-14 212214.png" width="220" alt="Receipt Data Prep"> |
-| **03** | **Deduplication Check: (Duplicate Found - Example)** | <img src="Screenshot 2026-09-14 211148.png" width="220" alt="Duplicate Scan"> |
-| **04** | **Conditional Routing: Manual Review (High Amount)** | <img src="Screenshot 2026-09-14 205231.png" width="220" alt="High Amount Manual Review"> |
-| **05** | **Conditional Routing: Auto-Approval (Low Amount)** | <img src="Screenshot 2026-09-14 205843.png" width="220" alt="Low Amount Auto-approval"> |
+### ⚡ 1. Core Workflow Architecture & Processing
 
-| Database Section | Primary Database Ledger |
-| :---: | :---: |
-| **06** | **Google Sheets: Centralized Expense Database** | <img src="Screenshot 2026-09-15 001535.png" width="220" alt="Master Expense Ledger"> |
+| Step | Section / Node Executed | Visual Output |
+| :---: | :--- | :---: |
+| **01** | **Main n8n Workflow Architecture Canvas** | <img src="Screenshot 2026-09-14 212059.png" width="220" alt="Workflow Canvas"> |
+| **02** | **File Ingestion & Drive Trigger Execution** | <img src="Screenshot 2026-09-14 211858.png" width="220" alt="Drive Ingestion"> |
+| **03** | **PDF Text Extraction & Raw Processing** | <img src="Screenshot 2026-09-14 211148.png" width="220" alt="PDF Content Parsing"> |
+| **04** | **AI Receipt Data Extraction** | <img src="Screenshot 2026-09-14 210947.png" width="220" alt="AI Extraction"> |
+| **05** | **JSON Parsing & Data Formatting** | <img src="Screenshot 2026-09-14 205231.png" width="220" alt="JSON Formatting"> |
+| **06** | **Validation & Required Fields Check** | <img src="Screenshot 2026-09-14 205843.png" width="220" alt="Data Validation"> |
+
+---
+
+### 🛡️ 2. Logic Execution & Deduplication Screening
+
+| Step | Decision Logic & Routing | Visual Output |
+| :---: | :--- | :---: |
+| **07** | **Google Sheets Deduplication Lookup** | <img src="Screenshot 2026-09-14 212214.png" width="220" alt="Deduplication Lookup"> |
+| **08** | **Duplicate Detection Logic Branching** | <img src="Screenshot 2026-09-14 211936.png" width="220" alt="Duplicate Routing"> |
+| **09** | **Expense Threshold Evaluation (If Node)** | <img src="Screenshot 2026-09-14 211516.png" width="220" alt="Threshold Switch"> |
+| **10** | **Manual Review Routing (High-Value Claims)** | <img src="Screenshot 2026-09-14 210832.png" width="220" alt="Manual Review Path"> |
+
+---
+
+### 📊 3. Master Database & Alert Dispatches
+
+| Step | Database & Communication Logs | Visual Output |
+| :---: | :--- | :---: |
+| **11** | **Google Sheets Master Expense Ledger** | <img src="Screenshot 2026-09-15 001535.png" width="220" alt="Master Sheet Ledger"> |
+| **12** | **Automated Row Insertion Verification** | <img src="Screenshot 2026-09-15 001519.png" width="220" alt="Sheet Row Insert"> |
+| **13** | **Gmail Approval Notification Dispatch** | <img src="Screenshot 2026-09-15 001519.png" width="220" alt="Gmail Alert Dispatch"> |
 
 ---
 
