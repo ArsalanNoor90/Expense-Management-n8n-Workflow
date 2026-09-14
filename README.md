@@ -30,7 +30,10 @@ Screenshot 2026-09-14 205843.png
 
 | Master Expense Ledger |
 | :---: |
-| ![Google Sheets Expense Database](screenshots/expense-sheets-ledger.png) |
+| ![Google Sheets Expense Database](Screenshot 2026-09-15 001535.png
+Screenshot 2026-09-15 001519.png
+Screenshot 2026-09-15 001519.png
+) |
 
 ---
 
