@@ -20,7 +20,13 @@ An automated end-to-end expense processing engine built with n8n. It automatical
 
 | Workflow Architecture | Receipt Ingestion & Data Extraction |
 | :---: | :---: |
-| ![n8n Workflow Canvas](screenshots/n8n-expense-workflow.png) | ![Receipt Data Prep](screenshots/receipt-parsing.png) |
+| ![n8n Workflow Canvas](Screenshot 2026-09-14 212059.png
+Screenshot 2026-09-14 211858.png
+Screenshot 2026-09-14 211148.png
+Screenshot 2026-09-14 210947.png
+Screenshot 2026-09-14 205231.png
+Screenshot 2026-09-14 205843.png
+) | ![Receipt Data Prep](screenshots/receipt-parsing.png) |
 
 | Master Expense Ledger |
 | :---: |
