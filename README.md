@@ -26,7 +26,11 @@ Screenshot 2026-09-14 211148.png
 Screenshot 2026-09-14 210947.png
 Screenshot 2026-09-14 205231.png
 Screenshot 2026-09-14 205843.png
-) | ![Receipt Data Prep](screenshots/receipt-parsing.png) |
+) | ![Receipt Data Prep](Screenshot 2026-09-14 212214.png
+Screenshot 2026-09-14 211936.png
+Screenshot 2026-09-14 211516.png
+Screenshot 2026-09-14 210832.png
+) |
 
 | Master Expense Ledger |
 | :---: |
