@@ -127,7 +127,7 @@ An automated end-to-end expense processing engine built with n8n. It automatical
 
 ## 🎬 Live Demo & Walkthrough
 
-> ### 🚀 [▶️ Watch Full Workflow Execution Demo](YOUR_LINKEDIN_LOOM_POST_URL)
+> ### 🚀 [▶️ Watch Full Workflow Execution Demo]([YOUR_LINKEDIN_LOOM_POST_URL](https://lnkd.in/p/dkUMv6EP))
 > **Platform:** LinkedIn / Loom  
 > **What You'll See:** Live file upload to Google Drive ➔ JSON parsing ➔ Duplicate check ➔ Master Sheet insertion ➔ Automated alert generation.
 
