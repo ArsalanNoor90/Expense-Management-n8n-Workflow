@@ -1,0 +1,1320 @@
+{
+  "name": "AI-Driven Expense Management & Automated Monthly Reporting System",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "\"Submit Expense Receipt\"",
+        "formDescription": "\"Please upload your receipt to process the expense.\"",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "\"Upload Receipt\"",
+              "fieldType": "file",
+              "fieldName": "receipt_file",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "\"Employee Name / Email\"",
+              "fieldName": "submitted_by",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.6,
+      "position": [
+        -416,
+        176
+      ],
+      "id": "2011f2b3-82e2-4db1-bd1d-f9dc48b7b4fe",
+      "name": "Receive Receipt1",
+      "webhookId": "ad2902b1-0efc-4965-8ebf-611c7df2b0cd"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $binary.receipt_file.mimeType }}",
+                    "rightValue": "pdf",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "642d9288-c18f-44a8-be87-9d4219065d20"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "PDF"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "72f57e8d-657d-48f7-9261-2facd3ed19fe",
+                    "leftValue": "={{ $binary.receipt_file.mimeType }}",
+                    "rightValue": "image",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "IMAGE"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -192,
+        176
+      ],
+      "id": "ba762ca1-b22c-472c-8273-0ff35e9299b5",
+      "name": "File Type Switch"
+    },
+    {
+      "parameters": {
+        "resource": "document",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "text": "Analyze this receipt image carefully. Extract the key financial details and return ONLY a valid, plain JSON object without any markdown code blocks or backticks.\n\nJSON Schema:\n{\n  \"vendor\": \"Vendor Name\",\n  \"date\": \"YYYY-MM-DD\",\n  \"receipt_number\": \"Receipt Number or Invoice ID\",\n  \"amount\": 0.00,\n  \"tax\": 0.00,\n  \"payment_method\": \"Payment Method\",\n  \"status\": \"PAID\",\n  \"category\": \"Category Name\"\n}",
+        "inputType": "binary",
+        "binaryPropertyName": "receipt_file",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        144,
+        192
+      ],
+      "id": "0faa97f6-4cc9-4488-82be-81c68df20430",
+      "name": "AI Receipt Data Extraction",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "mWqoOgqhHMxbI35r",
+          "name": "Google Gemini(PaLM) Api account 24"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const responseText = $input.item.json.content.parts[0].text;\nconst cleanJsonText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();\nconst data = JSON.parse(cleanJsonText);\n\nreturn {\n  vendor: data.vendor,\n  date: data.date,\n  receipt_number: data.receipt_number || 'N/A',\n  amount: data.amount,\n  tax: data.tax || 0.00,\n  payment_method: data.payment_method || 'N/A',\n  status: data.status || 'Processed',\n  category: data.category\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        192
+      ],
+      "id": "95c283de-c9e8-4d28-b27f-87525214c6e9",
+      "name": "Parse Expense Data"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "1925d76e-dc3b-487e-b285-d3de3eae852e",
+              "leftValue": "={{ $json.amount }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "272d71ce-2b30-426b-bad7-e90dc1fe8d97",
+              "leftValue": "={{ $json.vendor }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -416,
+        592
+      ],
+      "id": "86d602d3-d65e-479a-9551-c4c1082c9af7",
+      "name": "Validate Expense Data"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1RWLT5msmbuB3k2JZybqsRW3BzXswORASdv5x_Xf5gr8",
+          "mode": "list",
+          "cachedResultName": "Expense Management",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1RWLT5msmbuB3k2JZybqsRW3BzXswORASdv5x_Xf5gr8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 865121124,
+          "mode": "list",
+          "cachedResultName": "Manual_Reviews",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1RWLT5msmbuB3k2JZybqsRW3BzXswORASdv5x_Xf5gr8/edit#gid=865121124"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Vendor": "={{ $json.vendor || 'Unknown / Unparsed' }}",
+            "Date": "={{ $json.date || \"Unknown\" }}",
+            "Amount": "={{ $json.amount || 0 }}",
+            "Status": "Requires Manual Review (Missing Critical Fields)",
+            "Category": "={{ $('Parse Expense Data').item.json.category }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Vendor",
+              "displayName": "Vendor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Amount",
+              "displayName": "Amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Category",
+              "displayName": "Category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -192,
+        704
+      ],
+      "id": "9c982e6c-fe32-436a-8219-d514bd03e366",
+      "name": "Log for Manual Review",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "gml6w6xc7PBsxQRc",
+          "name": "Google Sheets account 19"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "kzarsalan3@gmail.com",
+        "subject": "⚠️ Manual Review Required: Receipt Extraction Failed",
+        "message": "=<div style=\"font-family: Arial, sans-serif; max-width: 500px; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;\">   <h3 style=\"color: #d97706; margin-top: 0;\">⚠️ Expense Needs Manual Review</h3>   <p>An uploaded receipt failed automated validation and requires manual inspection.</p>   <ul>     <li><strong>Vendor:</strong> {{ $json.vendor || 'N/A' }}</li>     <li><strong>Extracted Amount:</strong> ${{ $json.amount || 'N/A' }}</li>     <li><strong>Status:</strong> Logged to Manual Review Sheet</li>   </ul>   <p style=\"margin-top: 20px;\">Please check the receipt file and log the details manually.</p> </div>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        32,
+        704
+      ],
+      "id": "2bccbf89-7d91-40ae-a477-45649a3967d0",
+      "name": "Send Review Notification",
+      "webhookId": "b9466bd8-64eb-4c75-a9a7-7cb6725d09c4",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "EusB1TZilQXg3t9b",
+          "name": "Gmail account 23"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1RWLT5msmbuB3k2JZybqsRW3BzXswORASdv5x_Xf5gr8",
+          "mode": "list",
+          "cachedResultName": "Expense Management",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1RWLT5msmbuB3k2JZybqsRW3BzXswORASdv5x_Xf5gr8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Expenses",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1RWLT5msmbuB3k2JZybqsRW3BzXswORASdv5x_Xf5gr8/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID",
+              "lookupValue": "={{ $json.receipt_number }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -192,
+        480
+      ],
+      "id": "3e63c2b3-0717-4847-a6e6-63cd582bcad3",
+      "name": "Check Existing Expense",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "gml6w6xc7PBsxQRc",
+          "name": "Google Sheets account 19"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "bff048a8-0e6a-4cf3-955a-59eaae8166d9",
+              "leftValue": "={{ $('Check Existing Expense').item.json.ID }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        32,
+        480
+      ],
+      "id": "050401fd-ef9c-468b-b960-a7a51847678c",
+      "name": "Duplicate Found?"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1RWLT5msmbuB3k2JZybqsRW3BzXswORASdv5x_Xf5gr8",
+          "mode": "list",
+          "cachedResultName": "Expense Management",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1RWLT5msmbuB3k2JZybqsRW3BzXswORASdv5x_Xf5gr8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1390980650,
+          "mode": "list",
+          "cachedResultName": "Duplicates",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1RWLT5msmbuB3k2JZybqsRW3BzXswORASdv5x_Xf5gr8/edit#gid=1390980650"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Category": "={{ $json.Category }}",
+            "Amount": "={{ $json.Amount }}",
+            "Vendor": "={{ $json.Vendor }}",
+            "Date": "={{ $json.Date }}",
+            "Status": "Duplicate Entry Flagged",
+            "Flagged_At": "={{ $now.toFormat('yyyy-MM-dd HH:mm:ss') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Vendor",
+              "displayName": "Vendor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Amount",
+              "displayName": "Amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Category",
+              "displayName": "Category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Flagged_At",
+              "displayName": "Flagged_At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        336,
+        384
+      ],
+      "id": "20b65e2b-5b66-42d1-a178-509d912061d1",
+      "name": "Flag Duplicate Expense",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "gml6w6xc7PBsxQRc",
+          "name": "Google Sheets account 19"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "adc30f84-b7ea-4194-8256-5f171b7c56c1",
+              "leftValue": "={{ $json.Amount }}",
+              "rightValue": 100,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        560,
+        576
+      ],
+      "id": "c39ad042-bb88-4776-8feb-3148f0925a5b",
+      "name": "High-Value Expense?"
+    },
+    {
+      "parameters": {
+        "sendTo": "kzarsalan3@gmail.com",
+        "subject": "={{ '🚨 High-Value Expense Alert: ' + $json.vendor }}",
+        "message": "=<div style=\"font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);\">\n  \n  <!-- Header -->\n  <div style=\"background-color: #dc2626; color: #ffffff; padding: 20px 24px; text-align: left;\">\n    <h2 style=\"margin: 0; font-size: 20px; font-weight: 600; display: flex; align-items: center;\">\n      🚨 High-Value Expense Alert\n    </h2>\n    <p style=\"margin: 4px 0 0 0; font-size: 13px; opacity: 0.9;\">An expense exceeding your threshold has been logged.</p>\n  </div>\n\n  <!-- Body Content -->\n  <div style=\"padding: 24px; color: #333333;\">\n    <table style=\"width: 100%; border-collapse: collapse; font-size: 14px;\">\n      <tr style=\"border-bottom: 1px solid #f0f0f0;\">\n        <td style=\"padding: 10px 0; color: #666666; font-weight: 500;\">Vendor</td>\n        <td style=\"padding: 10px 0; font-weight: 600; text-align: right; color: #111827;\">{{ $json.Vendor }}</td>\n      </tr>\n      <tr style=\"border-bottom: 1px solid #f0f0f0;\">\n        <td style=\"padding: 10px 0; color: #666666; font-weight: 500;\">Receipt No / ID</td>\n        <td style=\"padding: 10px 0; font-weight: 600; text-align: right; color: #111827;\">{{ $json.receipt_number || $json.ID }}</td>\n      </tr>\n      <tr style=\"border-bottom: 1px solid #f0f0f0;\">\n        <td style=\"padding: 10px 0; color: #666666; font-weight: 500;\">Date</td>\n        <td style=\"padding: 10px 0; font-weight: 600; text-align: right; color: #111827;\">{{ $json.Date }}</td>\n      </tr>\n      <tr style=\"border-bottom: 1px solid #f0f0f0;\">\n        <td style=\"padding: 10px 0; color: #666666; font-weight: 500;\">Category</td>\n        <td style=\"padding: 10px 0; font-weight: 600; text-align: right; color: #111827;\">{{ $json.Category }}</td>\n      </tr>\n      <tr style=\"border-bottom: 1px solid #f0f0f0;\">\n        <td style=\"padding: 10px 0; color: #666666; font-weight: 500;\">Payment Method</td>\n        <td style=\"padding: 10px 0; font-weight: 600; text-align: right; color: #111827;\">{{ $json['Payment Method'] }}</td>\n      </tr>\n      <tr>\n        <td style=\"padding: 14px 0 10px 0; color: #dc2626; font-weight: 700; font-size: 16px;\">Total Amount</td>\n        <td style=\"padding: 14px 0 10px 0; font-weight: 700; font-size: 18px; text-align: right; color: #dc2626;\">{{ $json.Amount }}</td>\n      </tr>\n    </table>\n\n    <!-- CTA Button -->\n    <div style=\"margin-top: 24px; text-align: center;\">\n      <a href=\"{{ $json.webViewLink || $json.Drive_Link || '#' }}\" target=\"_blank\" style=\"background-color: #111827; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-size: 14px; font-weight: 600; display: inline-block;\">\n        View Receipt Image\n      </a>\n    </div>\n  </div>\n\n  <!-- Footer -->\n  <div style=\"background-color: #f9fafb; padding: 12px 24px; text-align: center; border-top: 1px solid #e0e0e0;\">\n    <p style=\"margin: 0; font-size: 12px; color: #6b7280;\">Automated notification sent by AI Expense Management System</p>\n  </div>\n\n</div>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        864,
+        432
+      ],
+      "id": "c60473ae-a88d-4067-9b7a-bc9caa11f361",
+      "name": "Send High-Expense Alert",
+      "webhookId": "3425e1ee-50b3-4fee-9ca3-99b1e5cd1ced",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "EusB1TZilQXg3t9b",
+          "name": "Gmail account 23"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "inputDataFieldName": "receipt_file",
+        "name": "={{ $json.Vendor || $('Parse Expense Data').item.json.vendor }}_{{ $json.Date || $('Parse Expense Data').item.json.date }}.jpg",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1J1A_lcSiItUIr0-IA2iKnHVb-dMqXRQE",
+          "mode": "list",
+          "cachedResultName": "Receipt_Archives",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1J1A_lcSiItUIr0-IA2iKnHVb-dMqXRQE"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1040,
+        672
+      ],
+      "id": "8ad9be11-fa9a-4fda-a66d-718e5c7f7d1c",
+      "name": "Archive Receipt",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "uVgFMsQjRvveTEEm",
+          "name": "Google Drive account 5"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1RWLT5msmbuB3k2JZybqsRW3BzXswORASdv5x_Xf5gr8",
+          "mode": "list",
+          "cachedResultName": "Expense Management",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1RWLT5msmbuB3k2JZybqsRW3BzXswORASdv5x_Xf5gr8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Expenses",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1RWLT5msmbuB3k2JZybqsRW3BzXswORASdv5x_Xf5gr8/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Vendor": "={{ $('Parse Expense Data').item.json.vendor }}",
+            "Drive_Link": "={{ $json.webViewLink }}"
+          },
+          "matchingColumns": [
+            "Vendor"
+          ],
+          "schema": [
+            {
+              "id": "ID",
+              "displayName": "ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Vendor",
+              "displayName": "Vendor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Category",
+              "displayName": "Category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Amount",
+              "displayName": "Amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Drive_Link",
+              "displayName": "Drive_Link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Tax",
+              "displayName": "Tax",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Payment Method",
+              "displayName": "Payment Method",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1232,
+        672
+      ],
+      "id": "55b4558f-ef54-4667-b6fd-d70d757025b2",
+      "name": "Attach Receipt Link",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "gml6w6xc7PBsxQRc",
+          "name": "Google Sheets account 19"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1RWLT5msmbuB3k2JZybqsRW3BzXswORASdv5x_Xf5gr8",
+          "mode": "list",
+          "cachedResultName": "worksheets",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1RWLT5msmbuB3k2JZybqsRW3BzXswORASdv5x_Xf5gr8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Expenses",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1RWLT5msmbuB3k2JZybqsRW3BzXswORASdv5x_Xf5gr8/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Vendor": "={{ $('Parse Expense Data').item.json.vendor }}",
+            "Date": "={{ $('Parse Expense Data').item.json.date }}",
+            "Category": "={{ $('Parse Expense Data').item.json.category }}",
+            "Amount": "={{ $('Parse Expense Data').item.json.amount }}",
+            "Status": "={{ $('Validate Expense Data').item.json.status }}",
+            "Drive_Link": "N/A",
+            "ID": "={{ $('Parse Expense Data').item.json.receipt_number }}",
+            "Tax": "={{ $('Validate Expense Data').item.json.tax }}",
+            "Payment Method": "={{ $('Validate Expense Data').item.json.payment_method }}"
+          },
+          "matchingColumns": [
+            "ID"
+          ],
+          "schema": [
+            {
+              "id": "ID",
+              "displayName": "ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Vendor",
+              "displayName": "Vendor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Category",
+              "displayName": "Category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Amount",
+              "displayName": "Amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Drive_Link",
+              "displayName": "Drive_Link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Tax",
+              "displayName": "Tax",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Payment Method",
+              "displayName": "Payment Method",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        336,
+        576
+      ],
+      "id": "af002dc8-193f-4267-90ef-0858b2c74605",
+      "name": "Save New Expense",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "gml6w6xc7PBsxQRc",
+          "name": "Google Sheets account 19"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const triggerBinary = $('Receive Receipt1').first().binary.receipt_file;\nreturn [{ json: $json, binary: { receipt_file: triggerBinary } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        864,
+        672
+      ],
+      "id": "b8bd17de-59ac-4156-932b-a8134f6e55b2",
+      "name": "Prepare Binary"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "receipt_file",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        -16,
+        64
+      ],
+      "id": "20d7fec2-6fae-4213-86c9-ba1304233d25",
+      "name": "Extract PDF Receipt Content",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "months"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -432,
+        960
+      ],
+      "id": "232a578e-bb8f-4b76-9f1c-5e1da0164eb7",
+      "name": "Monthly Report Trigger"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1RWLT5msmbuB3k2JZybqsRW3BzXswORASdv5x_Xf5gr8",
+          "mode": "list",
+          "cachedResultName": "Expense Management",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1RWLT5msmbuB3k2JZybqsRW3BzXswORASdv5x_Xf5gr8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Expenses",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1RWLT5msmbuB3k2JZybqsRW3BzXswORASdv5x_Xf5gr8/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -208,
+        960
+      ],
+      "id": "1a6e7406-9cff-4241-af72-d62255273711",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "gml6w6xc7PBsxQRc",
+          "name": "Google Sheets account 19"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "7872f876-dae0-429b-84b9-aaf20b2a9157",
+              "leftValue": "={{ $now.minus({ month: 1 }).startOf('month').toFormat('yyyy-MM-dd') }}",
+              "rightValue": {},
+              "operator": {
+                "type": "dateTime",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        16,
+        960
+      ],
+      "id": "dcc791b2-97c5-4423-bce7-fe6d2a8b7886",
+      "name": "Filter Previous Month"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nlet totalSpending = 0;\nconst categoryTotals = {};\n\n// Process all records\nitems.forEach(item => {\n  const amount = parseFloat(item.json.Amount || item.json.amount || 0);\n  const category = item.json.Category || item.json.category || 'Uncategorized';\n  \n  totalSpending += amount;\n  \n  if (!categoryTotals[category]) {\n    categoryTotals[category] = 0;\n  }\n  categoryTotals[category] += amount;\n});\n\n// Format category totals for better UI display\nconst formattedCategories = {};\nObject.keys(categoryTotals).forEach(cat => {\n  formattedCategories[cat] = {\n    amount: categoryTotals[cat],\n    formatted: `$${categoryTotals[cat].toFixed(2)}`\n  };\n});\n\nreturn [{\n  json: {\n    summary: {\n      total_spending: totalSpending,\n      total_spending_formatted: `$${totalSpending.toFixed(2)}`,\n      total_transactions: items.length\n    },\n    category_breakdown: formattedCategories,\n    raw_category_totals: categoryTotals\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        960
+      ],
+      "id": "bddab2ec-caa9-4b46-8006-1a3c0f0753fc",
+      "name": "Calculate Monthly Expenses & Category Totals"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an expert CFO assistant. Analyze the following monthly spending summary and draft a concise, executive financial report in clean HTML format suitable for an email body.\n\nInput Data:\n- Total Spending: ${{$json.totalSpending }}\n- Total Transactions: {{ $json.totalTransactions }}\n- Category Breakdown: {{ JSON.stringify($json.categoryTotals) }}\n\nRequirements:\n1. Include a brief executive overview.\n2. Include a bulleted category breakdown with total amounts.\n3. Provide 2-3 key financial insights or cost-saving recommendations based on this spending.\n4. Output ONLY valid HTML code (use <h3>, <p>, <ul>, <li>, <strong> tags). Do NOT wrap the response in markdown code blocks like ```html.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        464,
+        960
+      ],
+      "id": "898f400a-c14f-4096-97f7-b149532d064f",
+      "name": "AI Spending Analysis"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        464,
+        1136
+      ],
+      "id": "54cac877-c999-4a42-85e0-5dbfbd61e9e8",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "mWqoOgqhHMxbI35r",
+          "name": "Google Gemini(PaLM) Api account 24"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "kzarsalan3@gmail.com",
+        "subject": "=Executive Monthly Financial Spending Report - {{ $now.minus({ month: 1 }).toFormat('MMMM yyyy') }}",
+        "message": "={{ $json.output || $json.text }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        832,
+        960
+      ],
+      "id": "0210f7f0-c9ff-4449-b863-6ea8e9a69b73",
+      "name": "Send Monthly Expense Report",
+      "webhookId": "9008f0d6-d5b3-4f06-a8b9-0b6b1f5ea356",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "EusB1TZilQXg3t9b",
+          "name": "Gmail account 23"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Receive Receipt1": {
+      "main": [
+        [
+          {
+            "node": "File Type Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "File Type Switch": {
+      "main": [
+        [
+          {
+            "node": "Extract PDF Receipt Content",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Receipt Data Extraction",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Receipt Data Extraction": {
+      "main": [
+        [
+          {
+            "node": "Parse Expense Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Expense Data": {
+      "main": [
+        [
+          {
+            "node": "Validate Expense Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Expense Data": {
+      "main": [
+        [
+          {
+            "node": "Check Existing Expense",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log for Manual Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log for Manual Review": {
+      "main": [
+        [
+          {
+            "node": "Send Review Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Existing Expense": {
+      "main": [
+        [
+          {
+            "node": "Duplicate Found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Duplicate Found?": {
+      "main": [
+        [
+          {
+            "node": "Flag Duplicate Expense",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Save New Expense",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "High-Value Expense?": {
+      "main": [
+        [
+          {
+            "node": "Send High-Expense Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Binary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send High-Expense Alert": {
+      "main": [
+        []
+      ]
+    },
+    "Archive Receipt": {
+      "main": [
+        [
+          {
+            "node": "Attach Receipt Link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save New Expense": {
+      "main": [
+        [
+          {
+            "node": "High-Value Expense?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Binary": {
+      "main": [
+        [
+          {
+            "node": "Archive Receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract PDF Receipt Content": {
+      "main": [
+        [
+          {
+            "node": "AI Receipt Data Extraction",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Monthly Report Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Filter Previous Month",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Previous Month": {
+      "main": [
+        [
+          {
+            "node": "Calculate Monthly Expenses & Category Totals",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Monthly Expenses & Category Totals": {
+      "main": [
+        [
+          {
+            "node": "AI Spending Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Spending Analysis",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Spending Analysis": {
+      "main": [
+        [
+          {
+            "node": "Send Monthly Expense Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "timezone": "Asia/Karachi",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "0a24fdec-f8de-4687-b1dc-09a95ebc3de8",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "36e5b8acffef6d9e199c770a496fc034332fcb50e464bcb97692c27f5a41e6f9"
+  },
+  "nodeGroups": [],
+  "id": "n1BqdGwz81xk2vP4",
+  "tags": []
+}
